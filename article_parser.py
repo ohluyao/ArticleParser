@@ -84,11 +84,38 @@ def format_filename(filename):
 def empty_string(str):
     return len(re.sub('\n|\s|\r|\xa0','',str)) == 0
 
+def list_to_text(tag):
+    result = ''
+    if tag.name == 'ul':  # ordered list
+        for content in tag:
+            if isinstance(content, bs4.element.Tag) and content.name == 'li':
+                result += '    * ' + get_text(content) + '\n'
+            else:
+                result += get_text(content)
+    elif tag.name == 'ol':  # unordered list
+        order = 1
+        for content in tag:
+            if isinstance(content, bs4.element.Tag) and content.name == 'li':
+                result += '    ' + str(order) + '. ' + get_text(content) + '\n'
+            else:
+                result += get_text(content)
+            order += 1
+    elif tag.name == 'dl':  # definition list
+        for content in tag.contents:
+            if isinstance(content, bs4.element.Tag) and content.name == 'dd':
+                result += '    '  # add 4 spaces for definition description
+            result += get_text(content)
+    return result
+
 def get_text(soup_tag):
     if isinstance(soup_tag, bs4.element.NavigableString):
         return format_string(soup_tag)
     contents = soup_tag.contents
     result = ''
+    list_tag = ['ul','ol','dl']
+    if soup_tag.name in list_tag:
+        result += list_to_text(soup_tag)
+        return result
     if soup_tag.name == 'br':
         result += '\n'
     for content in contents:
@@ -175,6 +202,7 @@ def get_article(url):
     main_text_list = main_content.contents
     article_title = re.sub('\\r\\t\\n','',soup.title.text)
     text = write_to_file(main_text_list, article_title)
+    return main_content
     return (article_title,article,text)
     #return main_text_list
 
