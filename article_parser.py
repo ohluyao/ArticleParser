@@ -156,6 +156,11 @@ def get_article(url):
     remove_tag(soup)
 
     main_content = get_main_content(soup.html.body)
+    first_child = get_child_tag(main_content)
+    similar_list = get_similar_list(first_child)
+    if len(similar_list) > 2:
+        main_content.extract()
+        main_content = get_main_content(soup.html.body)
     print 'get main content block'
     
     hostname = req.get_host()
@@ -173,4 +178,55 @@ def get_article(url):
     return (article_title,article,text)
     #return main_text_list
 
+#################################
+#   get similar tag list by style and class
+#   this is used to remove comment block
+################################
+
+def get_child_tag(tag):
+    contents = tag.contents
+    if len(contents) == 0:
+        return None
+    for content in contents:
+        if isinstance(content, bs4.element.Tag) and content.name != 'br':
+            return content
+    return None
+
+def get_next_tag(tag):
+    while(tag.next_sibling != None):
+        tag = tag.next_sibling
+        if isinstance(tag, bs4.element.Tag) and tag.name != 'br':
+            return tag
+    return None
+
+def is_similar(src_tag, dst_tag):
+    if src_tag.name != dst_tag.name:
+        return False
+    src_attr = src_tag.attrs
+    dst_attr = dst_tag.attrs
+    if(len(src_attr) != len(dst_attr)):
+        return False
+    same_class = False
+    same_style = False
+    if 'class' in src_attr and 'class' in dst_attr and src_attr['class'] == dst_attr['class']:
+        same_class = True
+    if 'style' in src_attr and 'style' in dst_attr and src_attr['style'] == dst_attr['style']:
+        same_style = True
+    if same_class or same_style:
+        return True
+    return False
+
+
+def get_similar_list(begin):
+    next = get_next_tag(begin)
+    result_list = []
+    cur = begin
+    while next != None and is_similar(begin, next):
+        result_list.append(cur)
+        cur = next
+        next = get_next_tag(cur)
+    # add last similar tag to result list if number of similar tag is not zero
+    if len(result_list) > 0: 
+        result_list.append(cur)
+    return result_list
 
