@@ -58,8 +58,9 @@ def get_main_content(soup_tag):
     current_length = len(current_content.get_text())
     current_list = current_content.contents
     candidate_list = []
+    content_tags = ['p','br','i','b','img']
     for content in current_list:
-        if isinstance(content, bs4.element.Tag) and content.name != 'br':
+        if isinstance(content, bs4.element.Tag) and content.name not in content_tags:
             if len(content.get_text()) >= (current_length * CONTENT_THRESHOLD):
                 candidate_list.append(content)
     if len(candidate_list) == 0:
