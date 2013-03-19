@@ -187,6 +187,7 @@ def get_article(url, client_html = ""):
         soup = BeautifulSoup(html.read())
     else:
         print "parse from client html"
+        client_html = re.sub('<br>','<br/>',client_html)
         soup = BeautifulSoup(client_html)
     print 'parsed as soup'
 
