@@ -159,10 +159,13 @@ class Article:
     def __init__(self, url):
         self.url = url
 
-    def parse(self):
-        (self.title, self.content,self.text) = get_article(self.url)
+    def parse(self,html = ""):
+        if html == "":
+            (self.title, self.content,self.text) = get_article(self.url)
+        else:
+            (self.title, self.content,self.text) = get_article(self.url, html)
 
-def get_article(url):
+def get_article(url, client_html = ""):
     #url = 'http://blog.renren.com/share/292736783/15249284190?from=0101010202&ref=hotnewsfeed&sfet=102&fin=11&fid=21271721492&ff_id=292736783&platform=0&expose_time=1359701503'
     WORK_PREFIX = 'c:\\Users\\t-luyaof\\Dropbox\\Python\\Tools\\'
     HOME_PREFIX = 'f:\\Dropbox\\Python\\Tools\\'
@@ -178,8 +181,17 @@ def get_article(url):
     html = urllib2.urlopen(req)
     print 'get html from ' + url
 
-    soup = BeautifulSoup(html.read())
+    my_selfClosingTags = ['link','br']
+
+    if client_html == "":
+        soup = BeautifulSoup(html.read())
+    else:
+        print "parse from client html"
+        soup = BeautifulSoup(client_html)
     print 'parsed as soup'
+
+    article_title = re.sub('\\r\\t\\n','',soup.title.text)
+    
     remove_tag(soup)
 
     main_content = get_main_content(soup.html.body)
@@ -195,14 +207,12 @@ def get_article(url):
 
     remove_style(main_content)
     article = main_content.prettify()
-    #print main_content.find_previous_siblings()
-
-    #print main_content.find_next_siblings()
-   
+    
     main_text_list = main_content.contents
-    article_title = re.sub('\\r\\t\\n','',soup.title.text)
+
+    
+    
     text = write_to_file(main_text_list, article_title)
-    return main_content
     return (article_title,article,text)
     #return main_text_list
 
