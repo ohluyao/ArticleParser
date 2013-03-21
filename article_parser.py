@@ -58,7 +58,7 @@ def get_main_content(soup_tag):
     current_length = len(current_content.get_text())
     current_list = current_content.contents
     candidate_list = []
-    content_tags = ['p','br','i','b','img','ul','ol','dl']
+    content_tags = ['p','br','i','b','img','li','dd']
     for content in current_list:
         if isinstance(content, bs4.element.Tag) and content.name not in content_tags:
             if len(content.get_text()) >= (current_length * CONTENT_THRESHOLD):
@@ -135,7 +135,7 @@ def write_to_file(content_list, filename):
 
     WORK_PREFIX = 'c:\\Users\\t-luyaof\\Dropbox\\Python\\Tools\\'
     HOME_PREFIX = 'f:\\Dropbox\\Python\\Tools\\'
-    path_prefix = WORK_PREFIX
+    path_prefix = HOME_PREFIX
     if not os.path.exists(path_prefix + 'Articles\\'+dirname):
         os.mkdir(path_prefix + 'Articles\\'+dirname)
     filename = format_filename(filename)
@@ -173,7 +173,7 @@ def get_article(url, client_html = ""):
     #url = 'http://blog.renren.com/share/292736783/15249284190?from=0101010202&ref=hotnewsfeed&sfet=102&fin=11&fid=21271721492&ff_id=292736783&platform=0&expose_time=1359701503'
     WORK_PREFIX = 'c:\\Users\\t-luyaof\\Dropbox\\Python\\Tools\\'
     HOME_PREFIX = 'f:\\Dropbox\\Python\\Tools\\'
-    log_prefix = WORK_PREFIX 
+    log_prefix = HOME_PREFIX 
     log_file = open(log_prefix + 'Articles\\'+'parser_log.txt','a')
     log_dt = datetime.datetime.today()
     log_file.write(log_dt.isoformat()+'\t')
@@ -205,6 +205,9 @@ def get_article(url, client_html = ""):
     print 'first time get main_content'
     first_child = get_child_tag(main_content)
     if first_child != None:
+        if first_child.name == 'li': # suspect this is comment list
+            main_content.extract()
+            main_content = get_main_content(soup.html.body)
         similar_list = get_similar_list(first_child)
         if len(similar_list) > 2:
             main_content.extract()
@@ -231,6 +234,7 @@ def get_article(url, client_html = ""):
     
     
     text = write_to_file(main_text_list, article_title)
+    return main_content
     return (article_title,article,text)
     #return main_text_list
 
@@ -240,14 +244,17 @@ def get_article(url, client_html = ""):
 ########################
 
 def get_article_title(main_content):
-    title = main_content.find('h1')
-    if title != None:
-        return title
-    for parent in main_content.parents:
-        title = parent.find('h1')
+    title_tag = ['h1','h2','h3']
+    for tag in title_tag:
+        title = main_content.find('h1')
         if title != None:
             return title
-    return title
+        for parent in main_content.parents:
+            title = parent.find('h1')
+            if title != None:
+                return title
+    return None
+    
     
 #################################
 #   get similar tag list by style and class
