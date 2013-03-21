@@ -58,11 +58,14 @@ def get_main_content(soup_tag):
     current_length = len(current_content.get_text())
     current_list = current_content.contents
     candidate_list = []
-    content_tags = ['p','br','i','b','img']
+    content_tags = ['p','br','i','b','img','ul','ol','dl']
     for content in current_list:
         if isinstance(content, bs4.element.Tag) and content.name not in content_tags:
             if len(content.get_text()) >= (current_length * CONTENT_THRESHOLD):
+                #print soup_tag.name,
+                #print content.name,
                 candidate_list.append(content)
+    #print str(len(candidate_list))
     if len(candidate_list) == 0:
         return current_content
     return get_main_content(candidate_list[0])
@@ -182,8 +185,7 @@ def get_article(url, client_html = ""):
     html = urllib2.urlopen(req)
     print 'get html from ' + url
 
-    my_selfClosingTags = ['link','br']
-
+  
     if client_html == "":
         soup = BeautifulSoup(html.read())
     else:
@@ -192,17 +194,31 @@ def get_article(url, client_html = ""):
         soup = BeautifulSoup(client_html)
     print 'parsed as soup'
 
+    
     article_title = re.sub('\\r\\t\\n','',soup.title.text)
     
     remove_tag(soup)
+    print 'removed non content tag'
 
     main_content = get_main_content(soup.html.body)
+
+    print 'first time get main_content'
     first_child = get_child_tag(main_content)
-    similar_list = get_similar_list(first_child)
-    if len(similar_list) > 2:
-        main_content.extract()
-        main_content = get_main_content(soup.html.body)
+    if first_child != None:
+        similar_list = get_similar_list(first_child)
+        if len(similar_list) > 2:
+            main_content.extract()
+            main_content = get_main_content(soup.html.body)
     print 'get main content block'
+
+
+    h1_title_text = ""
+    h1_title = get_article_title(main_content)
+    if h1_title != None:
+        print h1_title
+        h1_title_text = re.sub('\\r\\t\\n','',h1_title.text)
+        article_title = h1_title_text
+    print "get title from article"
     
     hostname = req.get_host()
     add_site_prefix(main_content, hostname)
@@ -218,6 +234,21 @@ def get_article(url, client_html = ""):
     return (article_title,article,text)
     #return main_text_list
 
+
+########################
+# get article title based on main content
+########################
+
+def get_article_title(main_content):
+    title = main_content.find('h1')
+    if title != None:
+        return title
+    for parent in main_content.parents:
+        title = parent.find('h1')
+        if title != None:
+            return title
+    return title
+    
 #################################
 #   get similar tag list by style and class
 #   this is used to remove comment block
